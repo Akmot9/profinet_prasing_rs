@@ -1,0 +1,9 @@
+[package]
+name = "integration_test"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+profinet_rt = {path = "/home/erdt-cyber/Documents/gitHub/profinet_rt"}
+
+pnet = "0.35.0"
