@@ -11,4 +11,13 @@ edition = "2021"
 readme = "README.md"
 
 [dependencies]
-serde = { version = "1.0.204", features = ["derive"] }
+serde = { version = "1.0.214", features = ["derive"] }
+
+thiserror = "1.0.67"
+
+[dev-dependencies]
+criterion = { version = "0.5.1", features = ["html_reports"] }
+
+[[bench]]
+name = "parsed_profinet_packet_benchmark"
+harness = false
