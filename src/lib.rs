@@ -55,16 +55,16 @@ pub struct ProfinetPacket {
 
 impl ProfinetPacket {
     pub fn new(data: &[u8]) -> Option<ProfinetPacket> {
-        println!("Received data: {:02X?}", data);
+        //println!("Received data: {:02X?}", data);
         if data.len() < 16 {
             println!("Data too short to be a valid Profinet packet.");
             return None;
         }
 
         let frame_id_value = u16::from_be_bytes([data[0], data[1]]);
-        println!("Frame ID value: {:04x}", frame_id_value);
+        //println!("Frame ID value: {:04x}", frame_id_value);
         let frame_id = FrameId::from_u16(frame_id_value)?;
-        println!("Parsed Frame ID: {:?}", frame_id);
+        //println!("Parsed Frame ID: {:?}", frame_id);
 
         if frame_id == FrameId::IdentifyReq {
             let service_id = data[2];
@@ -73,11 +73,11 @@ impl ProfinetPacket {
             let response_delay = u16::from_be_bytes([data[8], data[9]]);
             let dcp_data_length = u16::from_be_bytes([data[10], data[11]]);
 
-            println!("Service ID: {}", service_id);
-            println!("Service Type: {}", service_type);
-            println!("XID: {:#010x}", xid);
-            println!("Response Delay: {}", response_delay);
-            println!("DCP Data Length: {}", dcp_data_length);
+            // println!("Service ID: {}", service_id);
+            // println!("Service Type: {}", service_type);
+            // println!("XID: {:#010x}", xid);
+            // println!("Response Delay: {}", response_delay);
+            // println!("DCP Data Length: {}", dcp_data_length);
 
             let block = &data[12..];
             if block.len() >= 4 {
@@ -85,13 +85,13 @@ impl ProfinetPacket {
                 let suboption = block[1];
                 let dcp_block_length = u16::from_be_bytes([block[2], block[3]]);
 
-                println!("Option: {}", option);
-                println!("Suboption: {}", suboption);
-                println!("DCP Block Length: {}", dcp_block_length);
+                // println!("Option: {}", option);
+                // println!("Suboption: {}", suboption);
+                // println!("DCP Block Length: {}", dcp_block_length);
 
                 if block.len() >= (4 + dcp_block_length as usize) {
                     let name_of_station = String::from_utf8_lossy(&block[4..4 + dcp_block_length as usize]).to_string();
-                    println!("Name Of Station: {}", name_of_station);
+                    // println!("Name Of Station: {}", name_of_station);
 
                     return Some(ProfinetPacket {
                         frame_id,
@@ -109,7 +109,7 @@ impl ProfinetPacket {
             }
         }
 
-        println!("Not a DCP Identify Request or insufficient data.");
+        // println!("Not a DCP Identify Request or insufficient data.");
         None
     }
 }
