@@ -1,7 +1,7 @@
 use serde::Serialize;
 use std::convert::TryFrom;
 use thiserror::Error;
-use std::fmt;
+// use std::fmt;
 
 #[repr(u16)]
 #[derive(Debug, Serialize, Clone, Eq, PartialEq, Hash, Default)]
@@ -40,7 +40,7 @@ pub enum ProfinetPacketError {
 }
 
 #[derive(Debug, Default, Serialize, Clone, Eq, PartialEq, Hash)]
-pub struct ProfinetPacket {
+pub struct ProfinetPacket<'a> {
     pub frame_id: FrameId,
     pub service_id: u8,
     pub service_type: u8,
@@ -50,10 +50,10 @@ pub struct ProfinetPacket {
     pub option: u8,
     pub suboption: u8,
     pub dcp_block_length: u16,
-    pub name_of_station: String,
+    pub name_of_station: &'a str,
 }
 
-impl<'a> TryFrom<&'a [u8]> for ProfinetPacket {
+impl<'a> TryFrom<&'a [u8]> for ProfinetPacket<'a>  {
     type Error = ProfinetPacketError;
 
     fn try_from(data: &'a [u8]) -> Result<Self, Self::Error> {
@@ -116,7 +116,7 @@ fn validate_dcp_block(data: &[u8]) -> Result<(), ProfinetPacketError> {
 }
 
 /// Extract the name of station from the DCP block.
-fn extract_name_of_station(data: &[u8]) -> Result<String, ProfinetPacketError> {
+fn extract_name_of_station<'a>(data: &'a [u8]) -> Result<&'a str, ProfinetPacketError> {
     let block = &data[12..];
     let dcp_block_length = u16::from_be_bytes([block[2], block[3]]) as usize;
 
@@ -124,25 +124,25 @@ fn extract_name_of_station(data: &[u8]) -> Result<String, ProfinetPacketError> {
         return Err(ProfinetPacketError::InvalidDcpBlockLength(block.len()));
     }
 
-    String::from_utf8(block[4..4 + dcp_block_length].to_vec())
+    std::str::from_utf8(&block[4..4 + dcp_block_length])
         .map_err(|_| ProfinetPacketError::InvalidNameOfStation)
 }
 
-impl fmt::Display for ProfinetPacket {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "Frame ID: {:?}", self.frame_id)?;
-        writeln!(f, "Service ID: {}", self.service_id)?;
-        writeln!(f, "Service Type: {}", self.service_type)?;
-        writeln!(f, "XID: {:#010x}", self.xid)?;
-        writeln!(f, "Response Delay: {}", self.response_delay)?;
-        writeln!(f, "DCP Data Length: {}", self.dcp_data_length)?;
-        writeln!(f, "Option: {}", self.option)?;
-        writeln!(f, "Suboption: {}", self.suboption)?;
-        writeln!(f, "DCP Block Length: {}", self.dcp_block_length)?;
-        writeln!(f, "Name Of Station: {}", self.name_of_station)?;
-        Ok(())
-    }
-}
+// impl fmt::Display for ProfinetPacket {
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         writeln!(f, "Frame ID: {:?}", self.frame_id)?;
+//         writeln!(f, "Service ID: {}", self.service_id)?;
+//         writeln!(f, "Service Type: {}", self.service_type)?;
+//         writeln!(f, "XID: {:#010x}", self.xid)?;
+//         writeln!(f, "Response Delay: {}", self.response_delay)?;
+//         writeln!(f, "DCP Data Length: {}", self.dcp_data_length)?;
+//         writeln!(f, "Option: {}", self.option)?;
+//         writeln!(f, "Suboption: {}", self.suboption)?;
+//         writeln!(f, "DCP Block Length: {}", self.dcp_block_length)?;
+//         writeln!(f, "Name Of Station: {}", self.name_of_station)?;
+//         Ok(())
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
