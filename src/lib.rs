@@ -217,3 +217,56 @@ mod tests {
     //     assert_eq!(packet.name_of_station, "scalanceh");
     // }
 }
+
+#[cfg(test)]
+mod integration_tests {
+    use super::*;
+    use pnet::packet::ethernet::MutableEthernetPacket;
+    use pnet::packet::MutablePacket;
+
+    use pnet::packet::Packet;
+
+    #[test]
+    fn test_handle_profinet_packet() {
+        // Constructing a mock Ethernet packet with Profinet payload.
+        let mut ethernet_data = vec![0u8; 64];
+        let mut eth_packet = MutableEthernetPacket::new(&mut ethernet_data).unwrap();
+
+        // Setting Ethernet type to indicate Profinet packet.
+        eth_packet.set_ethertype(pnet::packet::ethernet::EtherType(0x8892));
+
+        // Adding a Profinet payload (mocked data).
+        let profinet_payload = [
+            0xFE, 0xFE, // Frame ID for IdentifyReq
+            0x01, 0x02, // Service ID and Type
+            0x00, 0x00, 0x00, 0x01, // XID
+            0x00, 0x10, // Response Delay
+            0x00, 0x0C, // DCP Data Length
+            0x02, // Option
+            0x03, // Suboption
+            0x00, 0x04, // DCP Block Length
+            b'T', b'E', b'S', b'T' // Name Of Station
+        ];
+        eth_packet.payload_mut()[..profinet_payload.len()].copy_from_slice(&profinet_payload);
+
+        // Attempt to parse the Profinet packet from the Ethernet payload.
+        let payload = eth_packet.payload();
+        match ProfinetPacket::try_from(payload) {
+            Ok(packet) => {
+                // Assert the parsed values to ensure correctness.
+                assert_eq!(packet.frame_id, FrameId::IdentifyReq);
+                assert_eq!(packet.service_id, 0x01);
+                assert_eq!(packet.service_type, 0x02);
+                assert_eq!(packet.xid, 0x00000001);
+                assert_eq!(packet.response_delay, 0x0010);
+                assert_eq!(packet.dcp_data_length, 0x000C);
+                assert_eq!(packet.option, 0x02);
+                assert_eq!(packet.suboption, 0x03);
+                assert_eq!(packet.dcp_block_length, 0x0004);
+                assert_eq!(packet.name_of_station, "TEST");
+            }
+            Err(e) => panic!("Failed to parse Profinet packet: {:?}", e),
+        }
+    }
+}
+

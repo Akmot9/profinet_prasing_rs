@@ -1,3 +1,9 @@
 /target
+target/
+*/target
+target
+
+integration_test/target
+
 .env
 *.txt
