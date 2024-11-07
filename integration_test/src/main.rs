@@ -1,15 +1,16 @@
 use pnet::datalink::{self, Channel::Ethernet};
-use pnet::packet::ethernet::{EtherTypes, EthernetPacket};
+use pnet::packet::ethernet::EthernetPacket;
 use profinet_rt::ProfinetPacket;
 use std::convert::TryFrom;
-
+use std::env;
 use pnet::packet::Packet;
 
 /// Example function to handle Ethernet packets and parse Profinet packets.
 fn handle_ethernet_packet(ethernet_packet: &EthernetPacket) {
     match ethernet_packet.get_ethertype().0 {
         0x8892 => { // EtherType for Profinet
-            match ProfinetPacket::try_from(ethernet_packet.packet()) {
+            println!("Received Profinet packet: {:?}", ethernet_packet.payload());
+            match ProfinetPacket::try_from(ethernet_packet.payload()) {
                 Ok(profinet_packet) => {
                     println!("Parsed Profinet Packet: {:?}", profinet_packet);
                 },
@@ -24,12 +25,21 @@ fn handle_ethernet_packet(ethernet_packet: &EthernetPacket) {
 }
 
 fn main() {
+    // Check for interface name as a command line argument
+    let args: Vec<String> = env::args().collect();
+    if args.len() < 2 {
+        eprintln!("Usage: {} <interface_name>", args[0]);
+        std::process::exit(1);
+    }
+
+    let interface_name = &args[1];
+    
     // List all available network interfaces
     let interfaces = datalink::interfaces();
     let interface = interfaces
         .into_iter()
-        .find(|iface| iface.is_up() && !iface.ips.is_empty() && !iface.is_loopback())
-        .expect("No suitable network interface found");
+        .find(|iface| iface.name == *interface_name)
+        .expect("No matching network interface found");
 
     println!("Using interface: {}", interface.name);
 
@@ -46,8 +56,11 @@ fn main() {
     loop {
         match rx.next() {
             Ok(packet) => {
-                let ethernet_packet = EthernetPacket::new(packet).unwrap();
-                handle_ethernet_packet(&ethernet_packet);
+                if let Some(ethernet_packet) = EthernetPacket::new(packet) {
+                    handle_ethernet_packet(&ethernet_packet);
+                } else {
+                    eprintln!("Failed to parse Ethernet packet.");
+                }
             },
             Err(e) => eprintln!("Failed to receive packet: {}", e),
         }
